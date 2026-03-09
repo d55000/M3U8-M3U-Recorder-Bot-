@@ -6,14 +6,124 @@ A **Telegram Bot** to record M3U8 (or M3U) streams, manage recordings, and deliv
 
 ## 🔎 Table of Contents
 
-1. [Features](#features)
-2. [Configuration (`config.py`)](#configuration-configpy--full-breakdown)
-3. [Commands (User + Admin)](#commands-user--admin--detailed)
-4. [M3U → JSON Converter](#m3u---json-converter-in-repo)
-5. [Deployment](#deployment-full-details)
-6. [Troubleshooting & FAQ](#troubleshooting--faq)
-7. [Security & Notes](#security--notes)
-8. [Credits](#credits)
+1. [Quick Start: Add Your M3U & Generate JSON](#quick-start-add-your-m3u--generate-json)
+2. [Features](#features)
+3. [Configuration (`config.py`)](#configuration-configpy--full-breakdown)
+4. [Commands (User + Admin)](#commands-user--admin--detailed)
+5. [M3U → JSON Converter](#m3u---json-converter-in-repo)
+6. [Deployment](#deployment-full-details)
+7. [Troubleshooting & FAQ](#troubleshooting--faq)
+8. [Security & Notes](#security--notes)
+9. [Credits](#credits)
+
+---
+
+<a name="quick-start-add-your-m3u--generate-json"></a>
+## ⚡ Quick Start: Add Your M3U & Generate JSON
+
+This section walks you through converting your `.m3u` / `.m3u8` playlist file into a `.json` file the bot can use, and then loading it into the bot.
+
+### Step 1 — Prepare your M3U file
+
+An M3U playlist is a plain-text file that lists TV/radio streams. A typical M3U file looks like this:
+
+```
+#EXTM3U
+#EXTINF:-1 group-title="News",DD News HD
+https://example.com/ddnews/hd.m3u8
+#EXTINF:-1 group-title="News",NDTV 24x7
+https://example.com/ndtv/live.m3u8
+#EXTINF:-1 group-title="Sports",Star Sports 1
+https://example.com/starsports1/hd.m3u8
+#EXTINF:-1 group-title="Entertainment",Sony TV HD
+https://example.com/sonytv/hd.m3u8
+```
+
+Save your playlist as a `.m3u` file (e.g. `my_channels.m3u`).
+
+### Step 2 — Convert M3U to JSON
+
+The included `M3U To Json.py` script reads your M3U file and produces a JSON file the bot understands. You can run it in two ways:
+
+**Option A — CLI mode (recommended for servers / headless environments):**
+
+```bash
+python "M3U To Json.py" my_channels.m3u my_channels.json
+```
+
+**Option B — GUI mode (desktop with display):**
+
+```bash
+python "M3U To Json.py"
+```
+A file-picker dialog will open to select your `.m3u` file and then a save dialog for the `.json` output.
+
+**During conversion** you will be prompted in the terminal to provide a description for each channel group found in the M3U. Press Enter to accept the default (the group name itself) or type a custom description:
+
+```
+--- Please provide descriptions for each group ---
+Enter description for group 'News' (Default: 'News'):
+Enter description for group 'Sports' (Default: 'Sports'): Live Sports
+Enter description for group 'Entertainment' (Default: 'Entertainment'):
+```
+
+### Step 3 — Review the generated JSON
+
+The output JSON maps each channel to a slugified key:
+
+```json
+{
+    "dd_news_hd": {
+        "name": "DD News HD",
+        "url": "https://example.com/ddnews/hd.m3u8",
+        "Group": "News"
+    },
+    "ndtv_24x7": {
+        "name": "NDTV 24x7",
+        "url": "https://example.com/ndtv/live.m3u8",
+        "Group": "News"
+    },
+    "star_sports_1": {
+        "name": "Star Sports 1",
+        "url": "https://example.com/starsports1/hd.m3u8",
+        "Group": "Live Sports"
+    },
+    "sony_tv_hd": {
+        "name": "Sony TV HD",
+        "url": "https://example.com/sonytv/hd.m3u8",
+        "Group": "Entertainment"
+    }
+}
+```
+
+Each entry has three fields:
+- **`name`** — The display name of the channel.
+- **`url`** — The stream URL extracted from your M3U.
+- **`Group`** — The group description (from your input during conversion).
+
+### Step 4 — Add the JSON to the bot
+
+Choose one of these methods:
+
+| Method | How |
+|--------|-----|
+| **Copy to directory** | Place the `.json` file into the folder set by `M3U8_FILES_DIRECTORY` in your config (default: `./m3u8_channels`). Restart the bot or use `/admin_panel` → Reload. |
+| **Telegram upload** | Send the `.json` file to the bot in Telegram and reply to it with `/add_m3u8`. The bot validates and loads it automatically. |
+| **Inline add** | Use `/add_m3u8 "filename.json" "https://stream.url" "Channel Name" "Group"` to add a single channel. |
+
+### Step 5 — Record a channel
+
+Once the JSON is loaded, you can record any channel:
+
+```
+/rec "dd_news_hd" 00:30:00 "DD News Recording"
+```
+
+Or search for channels interactively:
+
+```
+/search "News"
+```
 
 ---
 
@@ -296,7 +406,7 @@ There are multiple modes the bot supports (depending on code):
 <details>
 <summary>M3U8 To JSON</summary>
   
-File included: `M3U To Json.py` — an **interactive GUI** helper that reads `.m3u`/`.m3u8` and outputs a `.json` formatted for the bot.
+File included: `M3U To Json.py` — a helper that reads `.m3u`/`.m3u8` and outputs a `.json` formatted for the bot.
 
 ### What it does
 - Reads standard M3U playlists and extracts `#EXTINF` lines and `group-title` attributes if present.
@@ -307,13 +417,37 @@ File included: `M3U To Json.py` — an **interactive GUI** helper that reads `.m
 }
 ```
 - Prompts the user for group descriptions for better organization.
+- Handles duplicate channel names by appending `_1`, `_2`, etc. to their keys.
 
-### How to run (interactive GUI)
+### How to run
+
+**CLI mode** (works on servers and headless environments — no display required):
+```bash
+python "M3U To Json.py" input.m3u output.json
+```
+
+**GUI mode** (requires a desktop with display and tkinter):
 ```bash
 python "M3U To Json.py"
 ```
 - A file picker opens to choose the `.m3u` file and then a save dialog for `.json`.
-- After conversion, move the `.json` into `M3U8_FILES_DIRECTORY` or add it via `/add_m3u8`.
+
+### After conversion
+- Move the `.json` into `M3U8_FILES_DIRECTORY` or add it via the `/add_m3u8` Telegram command.
+- See the [Quick Start guide](#quick-start-add-your-m3u--generate-json) for a full walkthrough.
+
+### M3U format reference
+
+The converter expects standard M3U format:
+```
+#EXTM3U
+#EXTINF:-1 group-title="GroupName",Channel Name
+https://stream-url-here.m3u8
+```
+
+- `#EXTM3U` — Required header on the first line.
+- `#EXTINF:` — Metadata line. The `group-title="..."` attribute is optional but recommended for organization.
+- The URL line must start with `http` (both `http://` and `https://` are supported).
 
 </details>
 

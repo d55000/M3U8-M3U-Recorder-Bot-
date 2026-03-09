@@ -1,8 +1,7 @@
 import re
 import json
 import os
-import tkinter as tk
-from tkinter import filedialog
+import sys
 
 def slugify(text):
     """
@@ -129,41 +128,78 @@ def convert_m3u_to_json(m3u_filepath, json_filepath):
 
 # --- Script Execution ---
 if __name__ == "__main__":
-    # Hide the main Tkinter window
-    root = tk.Tk()
-    root.withdraw()
+    # CLI mode: accept input and output file paths as arguments
+    # Usage: python "M3U To Json.py" <input.m3u> <output.json>
+    if len(sys.argv) == 3:
+        m3u_input_path = sys.argv[1]
+        json_output_path = sys.argv[2]
 
-    # Open GUI file picker for M3U file
-    m3u_input_path = filedialog.askopenfilename(
-        title="Select M3U Playlist File",
-        filetypes=[("M3U files", "*.m3u"), ("All files", "*.*")]
-    )
+        if not os.path.isfile(m3u_input_path):
+            print(f"Error: Input file '{m3u_input_path}' not found.")
+            sys.exit(1)
 
-    if not m3u_input_path:
-        print("M3U file selection cancelled. Exiting.")
-        exit()
+        # Ensure the output directory exists
+        output_dir = os.path.dirname(json_output_path)
+        if output_dir and not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir)
+                print(f"Created output directory: {output_dir}")
+            except OSError as e:
+                print(f"Error creating directory '{output_dir}': {e}")
+                sys.exit(1)
 
-    # Open GUI save file dialog for JSON output
-    json_output_path = filedialog.asksaveasfilename(
-        title="Save JSON Output File As",
-        defaultextension=".json",
-        filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-    )
+        convert_m3u_to_json(m3u_input_path, json_output_path)
 
-    if not json_output_path:
-        print("JSON output file selection cancelled. Exiting.")
-        exit()
-
-    # Ensure the output directory exists (though asksaveasfilename usually handles this for the file itself)
-    output_dir = os.path.dirname(json_output_path)
-    if output_dir and not os.path.exists(output_dir):
+    elif len(sys.argv) == 1:
+        # GUI mode: use tkinter file dialogs (requires display)
         try:
-            os.makedirs(output_dir)
-            print(f"Created output directory: {output_dir}")
-        except OSError as e:
-            print(f"Error creating directory '{output_dir}': {e}")
-            print("Please ensure the output path is valid and you have write permissions.")
-            exit()
+            import tkinter as tk
+            from tkinter import filedialog
+        except ImportError:
+            print("Error: tkinter is not available. Use CLI mode instead:")
+            print('  python "M3U To Json.py" <input.m3u> <output.json>')
+            sys.exit(1)
 
-    # Perform the conversion
-    convert_m3u_to_json(m3u_input_path, json_output_path)
+        # Hide the main Tkinter window
+        root = tk.Tk()
+        root.withdraw()
+
+        # Open GUI file picker for M3U file
+        m3u_input_path = filedialog.askopenfilename(
+            title="Select M3U Playlist File",
+            filetypes=[("M3U files", "*.m3u"), ("All files", "*.*")]
+        )
+
+        if not m3u_input_path:
+            print("M3U file selection cancelled. Exiting.")
+            sys.exit(0)  # User cancellation is not an error
+
+        # Open GUI save file dialog for JSON output
+        json_output_path = filedialog.asksaveasfilename(
+            title="Save JSON Output File As",
+            defaultextension=".json",
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
+        )
+
+        if not json_output_path:
+            print("JSON output file selection cancelled. Exiting.")
+            sys.exit(0)  # User cancellation is not an error
+
+        # Ensure the output directory exists
+        output_dir = os.path.dirname(json_output_path)
+        if output_dir and not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir)
+                print(f"Created output directory: {output_dir}")
+            except OSError as e:
+                print(f"Error creating directory '{output_dir}': {e}")
+                sys.exit(1)
+
+        # Perform the conversion
+        convert_m3u_to_json(m3u_input_path, json_output_path)
+
+    else:
+        print("Usage:")
+        print('  GUI mode:  python "M3U To Json.py"')
+        print('  CLI mode:  python "M3U To Json.py" <input.m3u> <output.json>')
+        sys.exit(1)
