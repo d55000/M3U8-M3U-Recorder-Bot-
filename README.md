@@ -447,7 +447,7 @@ https://stream-url-here.m3u8
 
 - `#EXTM3U` — Required header on the first line.
 - `#EXTINF:` — Metadata line. The `group-title="..."` attribute is optional but recommended for organization.
-- The URL line must start with `http`.
+- The URL line must start with `http` (both `http://` and `https://` are supported).
 
 </details>
 

@@ -172,7 +172,7 @@ if __name__ == "__main__":
 
         if not m3u_input_path:
             print("M3U file selection cancelled. Exiting.")
-            sys.exit(0)
+            sys.exit(0)  # User cancellation is not an error
 
         # Open GUI save file dialog for JSON output
         json_output_path = filedialog.asksaveasfilename(
@@ -183,7 +183,7 @@ if __name__ == "__main__":
 
         if not json_output_path:
             print("JSON output file selection cancelled. Exiting.")
-            sys.exit(0)
+            sys.exit(0)  # User cancellation is not an error
 
         # Ensure the output directory exists
         output_dir = os.path.dirname(json_output_path)
